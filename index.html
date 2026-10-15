@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nuit au rayon frais</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@700;900&family=Figtree:wght@400;600;800&family=Special+Elite&family=VT323&display=swap">
+<style>
+/* Layout : chambre froide nocturne — bandeau LED (chrono + température), panneau de 5 cadenas, puis la salle active
+   présentée comme un caisson métallique avec la note manuscrite du chef. Thème sombre unique, assumé. */
+:root{
+  color-scheme:dark;
+  --bg:#060D14; --steel:#111B25; --steel2:#18252F; --line:#2A3C4B; --ink:#E3EEF4; --muted:#8FA6B6;
+  --ice:#8FD8F2; --led:#FF3D3D; --hazard:#F5C518; --ok:#4BE3A0; --ok-bg:#0F2E24; --ko:#FF7070; --ko-bg:#3A1518;
+  --paper:#E6ECEF; --paper-line:#B9CCD8; --paper-ink:#1C2733; --term:#3DFF8F; --term-bg:#03140B;
+  --label:#FFD43B; --label-ink:#1A1A12;
+  --f-display:"Big Shoulders Stencil Display","Impact","Arial Narrow",sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-note:"Special Elite","Courier New",monospace;
+  --f-led:"VT323",ui-monospace,"Courier New",monospace;
+}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;
+  background-image:radial-gradient(1200px 600px at 10% -10%,rgba(143,216,242,.13),transparent 60%),radial-gradient(900px 500px at 110% 110%,rgba(143,216,242,.08),transparent 60%);background-attachment:fixed}
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1060px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+h1,h2{font-family:var(--f-display);font-weight:900;text-transform:uppercase;letter-spacing:.02em;line-height:.95;margin:0;text-wrap:balance}
+h1{font-size:clamp(2.6rem,8vw,4.8rem);color:var(--ice);text-shadow:0 0 24px rgba(143,216,242,.35)}
+h2{font-size:clamp(2rem,5vw,3rem)}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--f-display);font-weight:700;font-size:1rem;letter-spacing:.18em;text-transform:uppercase;color:var(--hazard)}
+.small{font-size:.9rem;color:var(--muted)}
+
+/* Bandeau LED */
+.top{display:flex;flex-wrap:wrap;gap:16px;align-items:end;justify-content:space-between}
+.top .t{display:grid;gap:4px}
+.hud{display:flex;gap:10px;flex-wrap:wrap}
+.led{background:#000;border:2px solid #222b33;border-radius:6px;padding:4px 14px 6px;display:grid;min-width:120px;box-shadow:inset 0 0 18px rgba(0,0,0,.9)}
+.led small{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.led b{font-family:var(--f-led);font-weight:400;font-size:2.4rem;line-height:1;font-variant-numeric:tabular-nums;color:var(--led);text-shadow:0 0 10px rgba(255,61,61,.7)}
+.led.ice b{color:var(--ice);text-shadow:0 0 10px rgba(143,216,242,.6)}
+.led.pts b{color:var(--hazard);text-shadow:0 0 10px rgba(245,197,24,.5)}
+.led.alarm{animation:alarm 1s steps(2) infinite}
+@keyframes alarm{50%{border-color:var(--led)}}
+
+/* Panneau de cadenas */
+.locks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;background:var(--steel);border:1px solid var(--line);border-radius:10px;padding:14px;position:relative}
+.lock{all:unset;cursor:pointer;display:grid;justify-items:center;gap:4px;padding:8px 4px;border-radius:8px;text-align:center}
+.lock:focus-visible{outline:2px solid var(--ice);outline-offset:2px}
+.lock[aria-disabled="true"]{cursor:not-allowed;opacity:.45}
+.lock.cur{background:var(--steel2);box-shadow:0 0 0 1px var(--ice) inset}
+.lock svg{width:46px;height:56px;overflow:visible}
+.lock .shackle{transition:transform .5s cubic-bezier(.3,1.6,.5,1);transform-origin:36px 22px}
+.lock.done .shackle{transform:translateY(-7px) rotate(28deg)}
+.lock .body{fill:#556676}
+.lock.done .body{fill:var(--ok)}
+.lock.cur:not(.done) .body{fill:var(--hazard)}
+.lock .n{font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lock .d{font-family:var(--f-led);font-size:2rem;line-height:1;color:var(--muted)}
+.lock.done .d{color:var(--ok);text-shadow:0 0 8px rgba(75,227,160,.6)}
+.lock .nm{font-size:.78rem;line-height:1.2;color:var(--ink)}
+@media (max-width:620px){.lock .nm{display:none}.lock svg{width:34px;height:42px}.locks{padding:10px;gap:4px}}
+
+/* Caisson de salle */
+.box{position:relative;background:linear-gradient(180deg,var(--steel2),var(--steel));border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.box::before{content:"";display:block;height:12px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 14px,#111 14px 28px)}
+.box-in{padding:clamp(18px,3.4vw,32px);display:grid;gap:20px;min-width:0}
+.rivets::after{content:"";position:absolute;inset:22px 10px auto auto;width:6px;height:6px;border-radius:50%;background:#3a4b59;box-shadow:-0px 0 0 #3a4b59}
+.room-head{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:end}
+.dur{font-family:var(--f-led);font-size:1.4rem;color:var(--ice)}
+
+/* Note du chef (papier quadrillé) */
+.note{position:relative;background-color:var(--paper);color:var(--paper-ink);font-family:var(--f-note);font-size:1.02rem;line-height:1.6;
+  background-image:linear-gradient(var(--paper-line) 1px,transparent 1px),linear-gradient(90deg,var(--paper-line) 1px,transparent 1px);background-size:100% 26px,26px 100%;
+  padding:26px 22px 20px;border-radius:2px;transform:rotate(-.6deg);box-shadow:0 10px 24px rgba(0,0,0,.45);max-width:760px;display:grid;gap:10px}
+.note::before{content:"";position:absolute;top:-10px;left:50%;width:110px;height:24px;transform:translateX(-50%) rotate(2deg);background:rgba(245,197,24,.75)}
+.note p{max-width:none}
+.note .sig{text-align:right;font-size:.95rem}
+
+/* Boutons */
+.btns{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button.b{font:inherit;font-family:var(--f-display);font-weight:900;font-size:1.25rem;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:8px 20px;cursor:pointer;border:2px solid var(--hazard);background:var(--hazard);color:#111;transition:transform .1s}
+button.b:active{transform:translateY(1px)}
+button.b.ghost{background:transparent;color:var(--hazard)}
+button.b.ice{background:var(--ice);border-color:var(--ice)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ice);outline-offset:2px}
+.msg{font-weight:800}
+.msg.ok{color:var(--ok)} .msg.ko{color:var(--ko)}
+.hint{background:#0B1A24;border:1px dashed var(--ice);border-radius:6px;padding:12px 14px;color:var(--ice)}
+.hint b{font-family:var(--f-display);letter-spacing:.1em;text-transform:uppercase}
+
+/* Champs */
+input.n{font-family:var(--f-led);font-size:1.5rem;line-height:1;width:4.6em;padding:4px 8px;border:2px solid var(--line);border-radius:4px;background:#05090D;color:var(--ice);text-align:right}
+input.n.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}
+input.n.ko{border-color:var(--ko);color:var(--ko);background:var(--ko-bg);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.ch{display:flex;flex-wrap:wrap;gap:6px}
+.ch button{font:inherit;font-size:.92rem;font-weight:600;padding:6px 12px;border-radius:999px;border:2px solid var(--line);background:#0A131B;color:var(--ink);cursor:pointer}
+.ch button[aria-pressed="true"]{border-color:var(--ice);background:var(--ice);color:#06131B}
+.ch.ok button[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#04150E}
+.ch.ko button[aria-pressed="true"]{background:var(--ko);border-color:var(--ko);color:#1A0507}
+
+/* Salle 1 : étiquettes de gondole déchirées */
+.labels{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.lab{display:grid;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+.lab:nth-child(odd){transform:rotate(-1.2deg)} .lab:nth-child(even){transform:rotate(1deg)}
+.lab .top2{background:#fff;color:#1a1a1a;padding:10px 12px;font-weight:800;font-size:.95rem;min-height:3.2em}
+.lab .px{background:var(--label);color:var(--label-ink);padding:10px 12px 22px;display:grid;gap:8px;
+  clip-path:polygon(0 0,100% 0,100% 88%,92% 96%,84% 89%,75% 98%,66% 90%,57% 97%,48% 89%,39% 96%,30% 90%,21% 98%,12% 90%,4% 96%,0 90%)}
+.lab .known{font-family:var(--f-display);font-weight:900;font-size:2.2rem;line-height:1}
+.lab .known small{font-family:var(--f-body);font-size:.8rem;font-weight:800}
+.lab label{display:flex;gap:8px;align-items:center;font-size:.85rem;font-weight:800}
+.lab input.n{background:#fff;color:#13283A;border-color:#1a1a12}
+.lab input.n.ok{background:#DDF2E6;color:#0F5132;border-color:#0F5132}
+.lab input.n.ko{background:#FBE1DE;color:#8A1C14;border-color:#8A1C14}
+
+/* Tableaux */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:#0A1219}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;background:#0E1821}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:150px}
+td.v{font-family:var(--f-led);font-size:1.35rem;color:var(--ink)}
+tr:last-child td{border-bottom:0}
+
+/* Salle 3 : machine */
+.machine{background:#0B141B;border:2px solid #2E4352;border-radius:12px;padding:14px;display:grid;gap:12px;box-shadow:inset 0 0 0 4px #0E1A22}
+.machine .screen-top{display:flex;justify-content:space-between;align-items:center;font-family:var(--f-led);font-size:1.3rem;color:var(--ko)}
+.machine .blink{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* Salle 5 : terminal */
+.term{background:var(--term-bg);border:2px solid #0f3b22;border-radius:10px;padding:16px;display:grid;gap:12px;box-shadow:0 0 30px rgba(61,255,143,.08) inset;position:relative;overflow:hidden}
+.term::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 2px,transparent 2px 4px)}
+.term pre{margin:0;font-family:var(--f-led);font-size:1.25rem;line-height:1.2;color:var(--term);white-space:pre-wrap;text-shadow:0 0 6px rgba(61,255,143,.5)}
+.term .tbl{background:#020D07;border-color:#0f3b22}
+.term th{background:#041709;color:#6FD79A}
+.term td{border-color:#0f3b22}
+.term td.v{color:var(--term)}
+.term input.n{color:var(--term);border-color:#165c34;background:#010A05}
+.term input.n.ok{color:var(--ok)}
+
+/* Questions */
+.qs{display:grid;gap:12px}
+.q{display:grid;gap:8px;padding:14px;border:1px solid var(--line);border-radius:8px;background:#0C161E}
+.q .lbl{font-weight:600}
+.q .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.q .unit{font-family:var(--f-led);font-size:1.3rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.qnum{font-family:var(--f-led);color:var(--hazard);font-size:1.4rem;margin-right:6px}
+
+/* Déverrouillage */
+.unlock{display:flex;gap:18px;align-items:center;flex-wrap:wrap;border:2px solid var(--ok);background:var(--ok-bg);border-radius:10px;padding:14px 18px}
+.unlock .big{font-family:var(--f-led);font-size:4rem;line-height:.9;color:var(--ok);text-shadow:0 0 16px rgba(75,227,160,.7)}
+.unlock .clac{font-family:var(--f-display);font-weight:900;font-size:1.6rem;letter-spacing:.06em;color:var(--ok);text-transform:uppercase}
+.unlock>div{flex:1 1 220px;min-width:0}
+@media (prefers-reduced-motion:no-preference){.unlock{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}@keyframes pop{from{transform:scale(.9);opacity:.3}to{transform:none;opacity:1}}}
+
+/* Intro : panneau de porte */
+.door-sign{display:grid;gap:14px;justify-items:start}
+.sign{background:#0A1117;border:3px solid var(--ice);border-radius:8px;padding:10px 18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.sign b{font-family:var(--f-display);font-size:1.8rem;letter-spacing:.06em;color:var(--ice)}
+.sign span{font-family:var(--f-led);font-size:1.6rem;color:var(--ice)}
+.rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.rules div{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:#0C161E;display:grid;gap:4px}
+.rules b{font-family:var(--f-display);font-size:1.25rem;letter-spacing:.06em;text-transform:uppercase;color:var(--hazard)}
+
+/* Coffre */
+.vault-area{display:grid;justify-items:center;gap:20px;padding-block:10px}
+.vault{position:relative;width:min(320px,80vw);aspect-ratio:1;max-width:100%;perspective:900px}
+.vdoor{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#4A5D6C,#1C2A35 70%);border:10px solid #2D3E4C;box-shadow:0 0 0 6px #0D161D,0 20px 40px rgba(0,0,0,.6),inset 0 0 30px rgba(0,0,0,.6);display:grid;place-items:center;transform-origin:left center;transition:transform 1.4s cubic-bezier(.5,0,.2,1)}
+.vdoor .bolt{position:absolute;left:50%;top:50%;margin:-7px 0 0 -7px;width:14px;height:14px;border-radius:50%;background:#7B8E9C;box-shadow:inset -2px -2px 3px rgba(0,0,0,.5)}
+.vdoor .wheel{width:44%;aspect-ratio:1;border-radius:50%;border:8px solid #8A9AA6;position:relative;transition:transform 1s}
+.vdoor .wheel::before,.vdoor .wheel::after{content:"";position:absolute;left:50%;top:-14%;width:8px;height:128%;background:#8A9AA6;transform:translateX(-50%)}
+.vdoor .wheel::after{transform:translateX(-50%) rotate(90deg)}
+.vault-inside{position:absolute;inset:0;border-radius:50%;background:#020508;display:grid;place-items:center;text-align:center;box-shadow:inset 0 0 40px #000}
+.vault-inside b{font-family:var(--f-display);font-size:1.4rem;color:var(--hazard);letter-spacing:.06em}
+.vault.open .vdoor{transform:rotateY(-105deg)}
+.vault.open .wheel{transform:rotate(270deg)}
+.keypad{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:#000;border:2px solid #222b33;border-radius:8px;padding:10px}
+.keypad input{font-family:var(--f-led);font-size:3rem;line-height:1;width:1.3em;text-align:center;padding:2px 0;border:0;border-bottom:3px solid #3b1212;background:transparent;color:var(--led);text-shadow:0 0 10px rgba(255,61,61,.7)}
+.win{display:grid;gap:16px}
+ol.deb{margin:0;padding-left:1.3em;display:grid;gap:8px;max-width:70ch}
+
+footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;align-items:center}
+footer button{font:inherit;font-size:.82rem;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer}
+details.fm{background:var(--steel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+details.fm summary{cursor:pointer;font-family:var(--f-display);font-weight:900;font-size:1.2rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ice)}
+.formulas{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
+.formulas div{background:#0A131B;border-radius:6px;padding:10px 12px;border:1px solid var(--line)}
+.formulas b{display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;color:var(--hazard)}
+.formulas code{font-family:var(--f-led);font-size:1.3rem;color:var(--ice)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<style>body{margin:0}*,*::before,*::after{box-sizing:border-box}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<canvas id="snow" aria-hidden="true"></canvas>
+<div class="wrap">
+  <header class="top">
+    <div class="t">
+      <span class="eyebrow">Escape game · Calculs commerciaux</span>
+      <h1>Nuit au rayon frais</h1>
+    </div>
+    <div class="hud">
+      <div class="led" id="chipTime"><small>Temps restant</small><b id="time">60:00</b></div>
+      <div class="led ice"><small>Chambre froide</small><b id="temp">+3,0°C</b></div>
+      <div class="led pts"><small>Points</small><b id="score">500</b></div>
+    </div>
+  </header>
+
+  <nav class="locks" id="strip" aria-label="Cadenas des salles"></nav>
+
+  <details class="fm">
+    <summary>Fiche méthode du chef</summary>
+    <div class="formulas">
+      <div><b>Marge commerciale</b><code>PV HT − PA HT</code></div>
+      <div><b>Taux de marque</b><code>Marge ÷ PV HT × 100</code></div>
+      <div><b>Taux de marge</b><code>Marge ÷ PA HT × 100</code></div>
+      <div><b>Coef. multiplicateur</b><code>PV TTC ÷ PA HT</code></div>
+      <div><b>HT → TTC</b><code>TTC = HT × 1,055</code></div>
+      <div><b>TTC → HT</b><code>HT = TTC ÷ 1,055</code></div>
+    </div>
+  </details>
+
+  <main id="main"></main>
+
+  <footer>
+    <button id="btnReset" type="button">Nouvelle partie</button>
+    <span id="resetConfirm" hidden><button class="b ghost" id="btnResetYes" type="button" style="font-size:1rem;padding:4px 12px">Effacer la progression</button></span>
+  </footer>
+</div>
+
+<script>
+(function(){
+const TVA=1.055, SEUIL=25, DUREE=60*60;
+const r2=x=>Math.round(x*100+1e-7)/100;
+const r3=x=>Math.round(x*1000+1e-7)/1000;
+const fmt=(x,d=2)=>x.toFixed(d).replace('.',',');
+
+/* ---------- Neige / givre ---------- */
+(function(){
+  const c=document.getElementById('snow'),x=c.getContext('2d');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  let w,h,f=[];
+  function size(){w=c.width=innerWidth;h=c.height=innerHeight;f=Array.from({length:Math.min(90,Math.floor(w/14))},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.8+.4,s:Math.random()*.4+.15,d:Math.random()*Math.PI*2}))}
+  size();addEventListener('resize',size);
+  (function loop(){x.clearRect(0,0,w,h);x.fillStyle='rgba(200,235,250,.55)';
+    for(const p of f){p.y+=p.s;p.d+=.01;p.x+=Math.sin(p.d)*.25;if(p.y>h){p.y=-4;p.x=Math.random()*w}
+      x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()}
+    requestAnimationFrame(loop)})();
+})();
+
+/* ---------- Données produits ---------- */
+const P={
+  lait:{nom:'Lait demi-écrémé 1 L',pa:0.68,ht:0.95},
+  emm:{nom:'Emmental râpé 200 g',pa:1.62,ttc:2.39},
+  jam:{nom:'Jambon blanc × 4 tranches',pa:1.40,ht:2.10},
+  piz:{nom:'Pizza jambon-fromage',pa:2.15,ttc:3.49},
+  jus:{nom:"Jus d'orange frais 1 L",pa:1.10,ht:1.80},
+  frb:{nom:'Fromage blanc 500 g',pa:0.98,ttc:1.69}
+};
+const KEYS=Object.keys(P);
+for(const k of KEYS){const p=P[k];
+  p.pvht=p.ht!=null?p.ht:r2(p.ttc/TVA); const hx=p.ht!=null?p.ht:p.ttc/TVA;
+  p.pvttc=p.ttc!=null?p.ttc:r2(p.ht*TVA);
+  p.marge=r2(p.pvht-p.pa); const mx=hx-p.pa;
+  p.tdm=r2(p.marge/p.pvht*100); p.tdmX=r2(mx/hx*100); p.margeX=r2(mx); p.hx=hx;
+}
+
+/* ---------- Salles ---------- */
+const rooms=[];
+function num(id,label,ans,o={}){return {id,kind:'num',label,ans:Array.isArray(ans)?ans:[ans],tol:o.tol??0.005,dec:o.dec??2,unit:o.unit||''}}
+/* Accepte toutes les façons raisonnables d'arrondir (PV HT et marge arrondis ou non) */
+function tdmAll(hx,pa){const out=[];for(const h of [hx,r2(hx)])for(const m of [hx-pa,r2(hx-pa),r2(h)-pa,r2(r2(h)-pa)])out.push(r2(m/h*100));return out}
+function choice(id,label,options,ans){return {id,kind:'choice',label,options,ans}}
+
+rooms.push({key:'s1',name:'Les étiquettes déchirées',digit:4,dur:'≈ 8 min',
+ story:['22 h 47. Le magasin est fermé et la porte de la chambre froide vient de claquer derrière vous.',
+        'Pendant le réassort, six étiquettes ont été arrachées. Sur chacune il ne reste qu’un prix, HT ou TTC. Reconstituez la partie manquante (TVA 5,5 %, au centime près) et le premier cadenas cédera.'],
+ hint:'HT → TTC : on multiplie par 1,055. TTC → HT : on divise par 1,055. Arrondissez au centime le plus proche.',
+ qs:KEYS.map(k=>{const p=P[k];return p.ht!=null?num('s1_'+k,'PV TTC',p.pvttc,{unit:'€ TTC'}):num('s1_'+k,'PV HT',p.pvht,{unit:'€ HT'})}),
+ render:renderS1});
+
+const best=KEYS.reduce((a,k)=>P[k].tdm>P[a].tdm?k:a,KEYS[0]);
+const s2=[];
+for(const k of KEYS){const p=P[k];
+  if(p.ttc!=null) s2.push(num('s2_h_'+k,'PV HT',p.pvht));
+  s2.push(num('s2_m_'+k,'Marge',[p.marge,p.margeX]));
+  s2.push(num('s2_t_'+k,'Taux de marque',[p.tdm,...tdmAll(p.hx,p.pa)],{tol:0.02}));
+}
+s2.push(choice('s2_best','Le cadenas du carnet demande le nom du produit au meilleur taux de marque :',KEYS.map(k=>P[k].nom),KEYS.indexOf(best)));
+rooms.push({key:'s2',name:'Le carnet du chef',digit:8,dur:'≈ 12 min',
+ story:['Sur l’étagère, coincé entre deux cartons de yaourts : le carnet de suivi du chef de rayon. Il n’a noté que les prix d’achat.',
+        'Pour trois produits, il n’a même pas noté le prix de vente HT : il n’a que le prix TTC de l’étiquette. Convertissez-le d’abord en HT (vous l’avez déjà fait en salle 1).',
+        'Complétez son tableau. Le cadenas du carnet s’ouvre avec le nom du produit le plus rentable. Attention, deux produits se tiennent à un cheveu.'],
+ hint:'Marge = PV HT − PA HT. Taux de marque = Marge ÷ PV HT × 100. Pour les produits étiquetés en TTC, reprenez le PV HT trouvé en salle 1.',
+ qs:s2,render:renderS2});
+
+const C=[
+ {id:'s3a',nom:'Yaourt nature × 8',pa:1.20,coef:1.650,ask:'ttc'},
+ {id:'s3b',nom:'Crème fraîche 20 cl',pa:0.85,coef:1.742,ask:'ttc'},
+ {id:'s3c',nom:'Saumon fumé 4 tranches',pa:3.60,coef:1.465,ask:'ttc'},
+ {id:'s3d',nom:'Beurre demi-sel 250 g',pa:1.62,ttc:2.29,ask:'coef'},
+ {id:'s3e',nom:'Œufs plein air × 12',pa:2.05,ttc:3.19,ask:'coef'},
+ {id:'s3f',nom:'Mozzarella 125 g',ttc:1.29,coef:1.720,ask:'pa'}
+];
+const s3=C.map(c=>c.ask==='ttc'?num(c.id,'PV TTC',r2(c.pa*c.coef),{unit:'€ TTC'})
+  :c.ask==='coef'?num(c.id,'Coefficient',r3(c.ttc/c.pa),{tol:0.0005,dec:3})
+  :num(c.id,'PA HT',r2(c.ttc/c.coef),{unit:'€ HT'}));
+const sauTTC=r2(3.60*1.465), sauHT=r2(sauTTC/TVA), sauM=r2(sauHT-3.60), sauHTx=3.60*1.465/TVA;
+s3.push(num('s3g','Code de contrôle n°1 : PV HT du saumon fumé',sauHT,{unit:'€ HT'}));
+s3.push(num('s3h','Code de contrôle n°2 : taux de marque du saumon fumé',[r2(sauM/sauHT*100),...tdmAll(sauHTx,3.60),...tdmAll(sauTTC/TVA,3.60)],{tol:0.02,unit:'%'}));
+rooms.push({key:'s3',name:'La machine à étiquettes',digit:2,dur:'≈ 10 min',
+ story:['Au fond de la réserve, la machine à étiquettes clignote en rouge. Elle bloque la trappe de ventilation, votre seule sortie vers le couloir.',
+        'Ses données sont corrompues : il manque une valeur par ligne. Réparez-les, puis entrez les deux codes de contrôle.'],
+ hint:'PV TTC = PA HT × coef. Coef = PV TTC ÷ PA HT, arrondi à 3 chiffres après la virgule. Pour retrouver le PA HT : PV TTC ÷ coef. Pour le contrôle, convertissez le PV TTC du saumon en HT.',
+ qs:s3,data:C,render:renderS3});
+
+rooms.push({key:'s4',name:'Marque ou marge ?',digit:6,dur:'≈ 8 min',
+ story:['Dans le couloir, le casier du vigile. Son badge est à l’intérieur, protégé par un questionnaire.',
+        'Il a scotché un mot sur la porte : « Ceux qui confondent taux de marque et taux de marge passeront la nuit au frais. »'],
+ hint:'Taux de marque : on divise la marge par le PV HT. Taux de marge : on divise par le PA HT. Comme le PA HT est plus petit, le taux de marge est toujours le plus grand des deux.',
+ qs:[
+  choice('s4a','Un produit est acheté 2,00 € HT et vendu 2,50 € HT. Un taux de 20 %, c’est son taux de…',['Marque','Marge','TVA'],0),
+  choice('s4b','Même produit. Un taux de 25 %, c’est son taux de…',['Marque','Marge','TVA'],1),
+  choice('s4c','Pour un même produit, le taux de marge est toujours… au taux de marque.',['inférieur','égal','supérieur'],2),
+  choice('s4d','Quel outil permet de passer directement du PA HT au PV TTC ?',['Le taux de TVA','Le coefficient multiplicateur','Le taux de marque'],1),
+  choice('s4e','Une marge commerciale se calcule avec des prix…',['HT','TTC','HT ou TTC, peu importe'],0),
+  choice('s4f','Un article est vendu 2,11 € TTC. Son prix HT est…',['1,90 €','2,00 €','2,23 €'],1),
+  num('s4g','Calculez le taux de marge du jambon blanc (salle 2).',r2(P.jam.marge/P.jam.pa*100),{unit:'%'}),
+  num('s4h','Calculez le taux de marge du jus d’orange (salle 2).',r2(P.jus.marge/P.jus.pa*100),{unit:'%',tol:0.02})
+ ],render:renderList});
+
+const W=[
+ {k:'lait',c:[1.05,0.99,1.02]},
+ {k:'emm',c:[2.29,2.19,2.35]},
+ {k:'jam',c:[2.15,1.89,2.09]},
+ {k:'piz',c:[3.29,3.39,3.15]}
+];
+const s5=[];let aligned=0;
+for(const w of W){const p=P[w.k];
+  w.n=Math.min(...w.c); w.h=r2(w.n/TVA); w.m=r2(w.h-p.pa); w.t=r2(w.m/w.h*100);
+  const hx=w.n/TVA; w.tX=r2((hx-p.pa)/hx*100); w.mX=r2(hx-p.pa);
+  w.d=w.t>=SEUIL?0:1; if(w.d===0)aligned++;
+  s5.push(num('s5_n_'+w.k,'Nouveau PV TTC',w.n));
+  s5.push(num('s5_h_'+w.k,'PV HT',w.h));
+  s5.push(num('s5_m_'+w.k,'Marge',[w.m,w.mX]));
+  s5.push(num('s5_t_'+w.k,'Taux de marque',[w.t,...tdmAll(hx,p.pa)],{tol:0.02}));
+  s5.push(choice('s5_d_'+w.k,'Décision',['Aligner','Garder'],w.d));
+}
+rooms.push({key:'s5',name:'La guerre des prix',digit:aligned,dur:'≈ 12 min',
+ story:['Le badge ouvre le bureau du chef. Son ordinateur est allumé, et le coffre est relié au logiciel de prix.',
+        'Règle du chef : on s’aligne sur le concurrent le moins cher, sauf si le taux de marque tombe sous 25 %. Dans ce cas on garde l’ancien prix.',
+        'Le dernier chiffre du code = le nombre de produits que vous alignez.'],
+ hint:'1) Nouveau PV TTC = le plus bas des trois concurrents. 2) PV HT = TTC ÷ 1,055. 3) Marge = PV HT − PA HT. 4) Taux de marque = Marge ÷ PV HT × 100. Sous 25 % : on garde le prix.',
+ qs:s5,data:W,render:renderS5});
+
+/* Réponses supplémentaires acceptées pour l'emmental et la pizza (PV HT obtenu par TTC − 5,5 %) */
+for(const k of ['emm','piz']){const p=P[k];const h=r2(p.ttc*(1-0.055)),m=r2(h-p.pa),t=r2(m/h*100);
+  const add=(id,v)=>{for(const r of rooms){const q=r.qs.find(q=>q.id===id);if(q)q.ans.push(v)}};
+  add('s1_'+k,h);add('s2_h_'+k,h);add('s2_m_'+k,m);add('s2_t_'+k,t);}
+/* Même méthode acceptée en salle 3 (contrôle saumon) et en salle 5 */
+{const addTo=(id,v)=>{for(const r of rooms){const q=r.qs.find(q=>q.id===id);if(q&&!q.ans.includes(v))q.ans.push(v)}};
+  const h=r2(sauTTC*(1-0.055)),m=r2(h-3.60);addTo('s3g',h);addTo('s3h',r2(m/h*100));
+  for(const w of W){const p=P[w.k];const h2=r2(w.n*(1-0.055)),m2=r2(h2-p.pa),t2=r2(m2/h2*100);
+    addTo('s5_h_'+w.k,h2);addTo('s5_m_'+w.k,m2);addTo('s5_t_'+w.k,t2);}}
+const CODE=rooms.map(r=>r.digit).join('');
+
+/* ---------- État ---------- */
+const STORE='nuit-rayon-frais-v1';
+const fresh=()=>({started:false,finished:false,remaining:DUREE,score:500,cur:-1,solved:{},vals:{},hints:{},tries:{}});
+let S=fresh();
+try{const s=JSON.parse(localStorage.getItem(STORE)||'null');if(s&&typeof s==='object')S=Object.assign(S,s)}catch(e){}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(S))}catch(e){}}
+
+const $=s=>document.querySelector(s);
+const main=$('#main');
+
+/* ---------- HUD ---------- */
+function hud(){
+  const r=Math.max(0,S.remaining),m=Math.floor(r/60),s=r%60;
+  $('#time').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  $('#chipTime').classList.toggle('alarm',r<=300&&!S.finished);
+  const t=3-21*Math.min(1,(DUREE-r)/DUREE);
+  $('#temp').textContent=(t>=0?'+':'−')+fmt(Math.abs(t),1)+'°C';
+  $('#score').textContent=Math.max(0,S.score);
+}
+setInterval(()=>{if(S.started&&!S.finished&&S.remaining>0){S.remaining--;hud();save()}},1000);
+
+function unlocked(i){return i===0||!!S.solved[rooms[i-1].key]}
+const LOCK=`<svg viewBox="0 0 46 56" aria-hidden="true"><path class="shackle" d="M11 24 V15 a12 12 0 0 1 24 0 V24" fill="none" stroke="#9AAAB6" stroke-width="5" stroke-linecap="round"/><rect class="body" x="4" y="22" width="38" height="30" rx="5"/><circle cx="23" cy="35" r="4" fill="#0B1218"/><rect x="21.5" y="36" width="3" height="8" rx="1.5" fill="#0B1218"/></svg>`;
+function strip(){
+  const st=$('#strip');st.innerHTML='';
+  rooms.forEach((r,i)=>{
+    const b=document.createElement('button');b.className='lock';b.type='button';
+    const ok=S.started&&unlocked(i);
+    b.setAttribute('aria-disabled',ok?'false':'true');
+    b.setAttribute('aria-label',`Salle ${i+1} : ${r.name}${S.solved[r.key]?', ouverte':''}`);
+    if(S.solved[r.key])b.classList.add('done');
+    if(S.cur===i)b.classList.add('cur');
+    b.innerHTML=`${LOCK}<span class="n">Salle ${i+1}</span><span class="d">${S.solved[r.key]?r.digit:'_'}</span><span class="nm">${r.name}</span>`;
+    b.addEventListener('click',()=>{if(ok){S.cur=i;save();render()}});
+    st.appendChild(b);
+  });
+}
+
+/* ---------- Rendu ---------- */
+function inp(id,label){return `<input class="n" id="${id}" inputmode="decimal" autocomplete="off" aria-label="${label||id}">`}
+function chHTML(q){return `<div class="ch" data-q="${q.id}" role="group" aria-label="${q.label}">${q.options.map((o,i)=>`<button type="button" data-i="${i}" aria-pressed="false">${o}</button>`).join('')}</div>`}
+function qById(r,id){return r.qs.find(q=>q.id===id)}
+function note(lines){return `<div class="note">${lines.map(s=>`<p>${s}</p>`).join('')}</div>`}
+
+function shell(r,i,body){
+  return `<section class="box"><div class="box-in">
+    <div class="room-head"><div><span class="eyebrow">Salle ${i+1} / 5</span><h2>${r.name}</h2></div><span class="dur">${r.dur}</span></div>
+    ${note(r.story)}
+    ${body}
+    <div class="btns">
+      <button class="b" id="btnCheck" type="button">Tenter d’ouvrir</button>
+      <button class="b ghost" id="btnHint" type="button">${S.hints[r.key]?'Indice affiché':'Indice · −1 min'}</button>
+      <span class="msg" id="msg" aria-live="polite"></span>
+    </div>
+    <div class="hint" id="hint" ${S.hints[r.key]?'':'hidden'}><b>Indice</b><br>${r.hint}</div>
+    <div id="unl">${S.solved[r.key]?unlockHTML(r,i):''}</div>
+  </div></section>`;
+}
+function unlockHTML(r,i){
+  return `<div class="unlock"><span class="big">${r.digit}</span><div><span class="clac">Clac ! Cadenas ouvert</span><br>Notez ce chiffre : c’est le ${i+1}<sup>e</sup> du code du coffre.</div>
+  <button class="b ice" id="btnNext" type="button">${i<rooms.length-1?'Salle suivante':'Aller au coffre'}</button></div>`;
+}
+
+function renderS1(){
+  return `<div class="labels">${KEYS.map(k=>{const p=P[k];const known=p.ht!=null?`${fmt(p.ht)} <small>€ HT</small>`:`${fmt(p.ttc)} <small>€ TTC</small>`;
+    const lbl=p.ht!=null?'PV TTC':'PV HT';
+    return `<div class="lab"><div class="top2">${p.nom}</div><div class="px"><span class="known">${known}</span>
+    <label>${lbl} ${inp('s1_'+k,lbl+' '+p.nom)} €</label></div></div>`}).join('')}</div>`;
+}
+function renderS2(r){
+  const rows=KEYS.map(k=>{const p=P[k];
+    const ht=p.ttc!=null?`${inp('s2_h_'+k,'PV HT '+p.nom)}<div class="small" style="font-size:.78rem">étiquette : ${fmt(p.ttc)} € TTC</div>`:fmt(p.pvht);
+    return `<tr><td>${p.nom}</td><td class="v">${fmt(p.pa)}</td><td class="v">${ht}</td><td>${inp('s2_m_'+k,'Marge '+p.nom)}</td><td>${inp('s2_t_'+k,'Taux de marque '+p.nom)}</td></tr>`}).join('');
+  const q=qById(r,'s2_best');
+  return `<div class="tbl"><table><thead><tr><th>Produit</th><th>PA HT (€)</th><th>PV HT (€)</th><th>Marge (€)</th><th>Taux de marque (%)</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="q"><span class="lbl">${q.label}</span>${chHTML(q)}</div>`;
+}
+function renderS3(r){
+  const rows=r.data.map(c=>`<tr><td>${c.nom}</td>
+    <td class="v">${c.ask==='pa'?inp(c.id,'PA HT '+c.nom):fmt(c.pa)}</td>
+    <td class="v">${c.ask==='coef'?inp(c.id,'Coefficient '+c.nom):fmt(c.coef,3)}</td>
+    <td class="v">${c.ask==='ttc'?inp(c.id,'PV TTC '+c.nom):fmt(c.ttc)}</td></tr>`).join('');
+  return `<div class="machine"><div class="screen-top"><span>ETIQ-3000 · ERREUR DONNÉES</span><span class="blink">●</span></div>
+  <div class="tbl"><table><thead><tr><th>Produit</th><th>PA HT (€)</th><th>Coef. multi.</th><th>PV TTC (€)</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="grid2">${['s3g','s3h'].map(id=>{const q=qById(r,id);return `<div class="q"><span class="lbl">${q.label}</span><div class="row">${inp(id,q.label)}<span class="unit">${q.unit}</span></div></div>`}).join('')}</div></div>`;
+}
+function renderList(r){
+  return `<div class="qs">${r.qs.map((q,i)=>`<div class="q"><span class="lbl"><span class="qnum">${i+1}</span>${q.label}</span>${q.kind==='choice'?chHTML(q):`<div class="row">${inp(q.id,q.label)}<span class="unit">${q.unit}</span></div>`}</div>`).join('')}</div>`;
+}
+function renderS5(r){
+  const rows=r.data.map(w=>{const p=P[w.k];return `<tr><td>${p.nom}</td>${w.c.map(x=>`<td class="v">${fmt(x)}</td>`).join('')}
+    <td class="v">${fmt(p.pvttc)}</td><td class="v">${fmt(p.pa)}</td>
+    <td>${inp('s5_n_'+w.k,'Nouveau PV TTC '+p.nom)}</td><td>${inp('s5_h_'+w.k,'PV HT '+p.nom)}</td><td>${inp('s5_m_'+w.k,'Marge '+p.nom)}</td><td>${inp('s5_t_'+w.k,'Taux de marque '+p.nom)}</td>
+    <td>${chHTML(qById(r,'s5_d_'+w.k))}</td></tr>`}).join('');
+  return `<div class="term"><pre>&gt; RELEVÉ CONCURRENCE REÇU (prix en € TTC)
+&gt; SEUIL TAUX DE MARQUE : ${SEUIL} %
+&gt; ALIGNER SUR LE PRIX LE PLUS BAS ? _</pre>
+  <div class="tbl"><table><thead><tr><th>Produit</th><th>Conc. 1</th><th>Conc. 2</th><th>Conc. 3</th><th>Ancien PV TTC</th><th>PA HT</th><th>Nouveau PV TTC</th><th>PV HT</th><th>Marge</th><th>Taux (%)</th><th>Décision</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function renderIntro(){
+  main.innerHTML=`<section class="box"><div class="box-in">
+    <div class="door-sign">
+      <div class="sign"><b>Chambre froide n°2</b><span>+3,0°C ▼</span></div>
+      <h2>La porte vient de se verrouiller</h2>
+    </div>
+    ${note(['Vous êtes employé(e)s commerciaux au rayon frais d’un hypermarché. Ce soir, vous êtes resté(e)s tard pour finir le réassort… et la porte de la chambre froide s’est refermée derrière vous.',
+      'Le badge de sortie est dans le coffre du chef de rayon. Cinq cadenas, cinq chiffres. Vous avez <b>60 minutes</b> avant que la température ne descende à −18 °C.',
+      '<span class="sig">— Bon courage. Le chef.</span>'])}
+    <div class="rules">
+      <div><b>Arrondis</b><span class="small">Prix et taux au centième. Coefficients à 3 décimales. Virgule ou point, au choix.</span></div>
+      <div><b>Pénalités</b><span class="small">Tentative ratée : −10 points. Indice : −1 minute et −20 points. La fiche méthode est gratuite.</span></div>
+      <div><b>Équipe</b><span class="small">2 ou 3 joueurs, une calculatrice, un brouillon. Notez chaque chiffre obtenu.</span></div>
+    </div>
+    <div class="btns"><button class="b" id="btnStart" type="button">Commencer l’évasion</button></div>
+  </div></section>`;
+  $('#btnStart').onclick=()=>{S.started=true;S.cur=0;save();render()};
+}
+
+function renderRoom(i){
+  const r=rooms[i];
+  main.innerHTML=shell(r,i,r.render(r));
+  r.qs.forEach(q=>{
+    const v=S.vals[q.id];
+    if(q.kind==='num'){const el=document.getElementById(q.id);if(!el)return;if(v!=null)el.value=v;
+      el.addEventListener('input',()=>{S.vals[q.id]=el.value;el.classList.remove('ok','ko');save()});
+      el.addEventListener('keydown',e=>{if(e.key==='Enter')check(i)});
+      if(S.solved[r.key])el.classList.add('ok');}
+    else{const g=main.querySelector(`.ch[data-q="${q.id}"]`);if(!g)return;
+      g.querySelectorAll('button').forEach(b=>{
+        if(v!=null&&+b.dataset.i===v)b.setAttribute('aria-pressed','true');
+        b.onclick=()=>{g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');S.vals[q.id]=+b.dataset.i;g.classList.remove('ok','ko');save()};
+      });
+      if(S.solved[r.key])g.classList.add('ok');}
+  });
+  $('#btnCheck').onclick=()=>check(i);
+  $('#btnHint').onclick=()=>{if(!S.hints[r.key]){S.hints[r.key]=true;S.remaining-=60;S.score-=20;save();hud()}$('#hint').hidden=false;$('#btnHint').textContent='Indice affiché'};
+  bindNext(i);
+}
+function bindNext(i){const n=$('#btnNext');if(n)n.onclick=()=>{S.cur=i+1;save();render();window.scrollTo({top:0})}}
+
+function parse(v){if(v==null)return NaN;v=String(v).trim().replace(/\s|€|%/g,'').replace(',','.');return v===''?NaN:Number(v)}
+function check(i){
+  const r=rooms[i];let bad=0,empty=0,near=0;
+  r.qs.forEach(q=>{
+    if(q.kind==='num'){const el=document.getElementById(q.id);const v=parse(el.value);
+      el.classList.remove('ok','ko');
+      if(isNaN(v)){empty++;return}
+      void el.offsetWidth;
+      const ok=q.ans.some(a=>Math.abs(v-a)<=q.tol+1e-9);
+      el.classList.add(ok?'ok':'ko');if(!ok){bad++;if(q.dec===2&&q.ans.some(a=>Math.abs(v-a)<=0.0101))near++}}
+    else{const g=main.querySelector(`.ch[data-q="${q.id}"]`);const v=S.vals[q.id];
+      g.classList.remove('ok','ko');
+      if(v==null){empty++;return}
+      const ok=v===q.ans;g.classList.add(ok?'ok':'ko');if(!ok)bad++;}
+  });
+  const m=$('#msg');
+  if(bad===0&&empty===0){
+    S.solved[r.key]=true;
+    m.className='msg ok';m.textContent='Tout est juste.';
+    $('#unl').innerHTML=unlockHTML(r,i);bindNext(i);strip();
+    $('#unl').scrollIntoView({behavior:'smooth',block:'center'});
+  }else{
+    if(bad>0){S.score-=10;S.tries[r.key]=(S.tries[r.key]||0)+1}
+    m.className='msg ko';
+    m.textContent=(bad?`Le cadenas résiste : ${bad} réponse${bad>1?'s':''} fausse${bad>1?'s':''} (en rouge).`:'')+(empty?` ${empty} case${empty>1?'s':''} vide${empty>1?'s':''}.`:'')+(near?' Vous êtes à 1 centime près : vérifiez vos arrondis (3e décimale égale ou supérieure à 5 → on monte d’un centime).':'');
+  }
+  save();hud();
+}
+
+function renderSafe(){
+  main.innerHTML=`<section class="box"><div class="box-in">
+    <div class="room-head"><div><span class="eyebrow">Sortie</span><h2>Le coffre du chef</h2></div><span class="dur">≈ 5 min</span></div>
+    ${note(['Les cinq chiffres, dans l’ordre des salles. Pas de deuxième chance gratuite : chaque mauvais code coûte 10 points.'])}
+    <div class="vault-area">
+      <div class="vault" id="vault">
+        <div class="vault-inside"><div><b>BADGE DE SORTIE</b><br><span class="small">Vous êtes libres !</span></div></div>
+        <div class="vdoor">${[0,45,90,135,180,225,270,315].map(a=>`<span class="bolt" style="transform:rotate(${a}deg) translateY(calc(min(320px,80vw) * -0.36))"></span>`).join('')}<div class="wheel"></div></div>
+      </div>
+      <div class="keypad">${[0,1,2,3,4].map(i=>`<input id="c${i}" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="Chiffre ${i+1}">`).join('')}</div>
+      <div class="btns"><button class="b" id="btnOpen" type="button">Tourner la roue</button><span class="msg" id="msg" aria-live="polite"></span></div>
+    </div>
+    <div id="win"></div>
+  </div></section>`;
+  const ins=[0,1,2,3,4].map(i=>$('#c'+i));
+  ins.forEach((el,i)=>{
+    el.addEventListener('input',()=>{el.value=el.value.replace(/\D/g,'').slice(0,1);if(el.value&&ins[i+1])ins[i+1].focus()});
+    el.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!el.value&&ins[i-1])ins[i-1].focus();if(e.key==='Enter')$('#btnOpen').click()});
+  });
+  $('#btnOpen').onclick=()=>{
+    const v=ins.map(e=>e.value).join('');
+    if(v===CODE){S.finished=true;save();win()}
+    else{S.score-=10;save();hud();const m=$('#msg');m.className='msg ko';m.textContent='Le coffre reste fermé. Vérifiez l’ordre des chiffres.'}
+  };
+  if(S.finished){ins.forEach((e,i)=>e.value=CODE[i]);win()}
+}
+function win(){
+  $('#vault').classList.add('open');
+  const used=DUREE-S.remaining,m=Math.floor(Math.max(0,used)/60);
+  $('#msg').className='msg ok';$('#msg').textContent='';
+  $('#win').innerHTML=`<div class="win"><div class="unlock"><span class="big">✓</span><div><span class="clac">Évadés !</span><br>Temps utilisé : ${m} min · Score final : ${Math.max(0,S.score)} points.</div></div>
+  <div class="q"><span class="lbl">Débriefing avec votre chef de rayon</span>
+  <ol class="deb">
+    <li>Dans la salle 5, quels produits n’avez-vous pas alignés ? Que serait-il arrivé à la marge du magasin si vous l’aviez fait ?</li>
+    <li>S’aligner sur le concurrent le moins cher est-il toujours une bonne décision ? Justifiez avec un chiffre trouvé dans le jeu.</li>
+    <li>Pourquoi le chef de rayon doit-il surveiller à la fois les prix des concurrents et le taux de marque de ses produits ?</li>
+    <li>Le jambon blanc a un taux de marque de ${fmt(P.jam.tdm)} % et un taux de marge de ${fmt(r2(P.jam.marge/P.jam.pa*100))} %. Expliquez à un nouveau collègue pourquoi ces deux chiffres sont différents.</li>
+  </ol></div></div>`;
+  hud();
+}
+
+function render(){
+  strip();hud();
+  if(!S.started){renderIntro();return}
+  S.cur=Math.min(Math.max(S.cur,0),rooms.length);
+  if(S.cur===rooms.length)renderSafe();else renderRoom(S.cur);
+}
+
+$('#btnReset').onclick=()=>{$('#resetConfirm').hidden=false};
+$('#btnResetYes').onclick=()=>{try{localStorage.removeItem(STORE)}catch(e){};S=fresh();$('#resetConfirm').hidden=true;render();window.scrollTo({top:0})};
+
+render();
+})();
+</script>
+
+</body>
+</html>
